@@ -1,20 +1,8 @@
 import string
 import pickle
 import math
-from get_parser import parser
-
-
-def find_mode(buf):
-    mode = 3
-    if buf.find('key_file') != -1:
-        mode = 4
-    elif buf.find('my_mode') != -1:
-        if buf.find('encode') != -1:
-            mode = 1
-        elif buf.find('decode') != -1:
-            mode = 2
-
-    return mode
+import argparse
+import sys
 
 
 def read_file(filename):
@@ -157,6 +145,28 @@ def decode_vigenere(text, alphabet, key_word):
     return decoded_text
 
 
+def encode(args):
+    data = read_file(args.input_file.name)
+    abc_str = string.ascii_letters
+    new_data = ''
+    if args.cipher == 'vigenere':
+        new_data = encode_vigenere(data, abc_str, args.key)
+    elif args.cipher == 'caesar':
+        new_data = encode_caesar(data, abc_str, int(args.key))
+    write_file(args.output_file.name, new_data)
+
+
+def decode(args):
+    data = read_file(args.input_file.name)
+    abc_str = string.ascii_letters
+    new_data = ''
+    if args.cipher == 'vigenere':
+        new_data = decode_vigenere(data, abc_str, args.key)
+    elif args.cipher == 'caesar':
+        new_data = decode_caesar(data, abc_str, int(args.key))
+    write_file(args.output_file.name, new_data)
+
+
 def count_frequency(text, alphabet):
     freq_dict = dict.fromkeys(alphabet.lower(), 0)
     text_length = 0
@@ -218,28 +228,67 @@ def hack_caesar(text, alphabet, key_file):
     return encode_caesar(text, alphabet, needed_shift)
 
 
-args = parser.parse_args()
-data = read_file(args.input_file.name)
-abc_str = string.ascii_letters
-alphabet_len = len(abc_str)
-new_data = ''
-mode = find_mode(str(args))
-
-if mode == 1:
-    if args.cipher == 'vigenere':
-        new_data = encode_vigenere(data, abc_str, args.key)
-    elif args.cipher == 'caesar':
-        new_data = encode_caesar(data, abc_str, int(args.key))
-    write_file(args.output_file.name, new_data)
-elif mode == 2:
-    if args.cipher == 'vigenere':
-        new_data = decode_vigenere(data, abc_str, args.key)
-    elif args.cipher == 'caesar':
-        new_data = decode_caesar(data, abc_str, int(args.key))
-    write_file(args.output_file.name, new_data)
-elif mode == 3:
+def count_freq(args):
+    data = read_file(args.input_file.name)
+    abc_str = string.ascii_letters
     freq = count_frequency(data, abc_str)
     write_frequency(args.output_file.name, freq)
-elif mode == 4:
+
+
+def hack(args):
+    data = read_file(args.input_file.name)
+    abc_str = string.ascii_letters
     new_data = hack_caesar(data, abc_str, args.key_file.name)
     write_file(args.output_file.name, new_data)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='code and encode texts')
+    subparsers = parser.add_subparsers()
+
+    encode_parser = subparsers.add_parser('encode')
+    encode_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+                               help='The file with the text which we need to encode')
+    encode_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+                               default=sys.stdout,
+                               help='The file where we put encoded text')
+    encode_parser.add_argument('--cipher', type=str, choices=['caesar', 'vigenere'],
+                               help='Choose one of the cipher: caesar or vigenere')
+    encode_parser.add_argument('--key', type=str, default='0',
+                               help='Write the number if you use Caesar\'s code, or the word otherwise')
+    encode_parser.set_defaults(func=encode)
+
+    decode_parser = subparsers.add_parser('decode', help='')
+    decode_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+                               help='The file with the text which we need to decode')
+    decode_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+                               default=sys.stdout,
+                               help='The file where we put decoded text')
+    decode_parser.add_argument('--cipher', type=str, choices=['caesar', 'vigenere'],
+                               help='Choose one of the cipher: caesar or vigenere')
+    decode_parser.add_argument('--key', type=str, default='0',
+                               help='Write the number if you use Caesar\'s code, or the word otherwise')
+    decode_parser.set_defaults(func=decode)
+
+    freq_parser = subparsers.add_parser('frequence', help='')
+    freq_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+                             help='The file with text in which we must calculate the frequency of letters')
+    freq_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+                             default=sys.stdout,
+                             help='The file where we put binary file with the frequency of letters')
+    freq_parser.set_defaults(func=count_freq)
+
+    hack_parser = subparsers.add_parser('hack', help='')
+    hack_parser.add_argument('--key_file', type=argparse.FileType('rt'),
+                             help='Character frequency file for hacking Caesar’s cipher')
+    hack_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+                             help='The file with text in which we need to hack')
+    hack_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+                             default=sys.stdout,
+                             help='The file where we put decoded text')
+    hack_parser.set_defaults(func=hack)
+    return parser.parse_args()
+
+
+args = parse_args()
+args.func(args)
