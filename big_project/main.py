@@ -6,18 +6,20 @@ import sys
 
 
 def read_file(filename):
+    data = ""
     if filename != '<stdin>':
         try:
             with open(filename, 'rt') as buffer:
                 data = buffer.read()
         except IOError:
             print("An IOError has occurred!")
-            data = ""
         except NameError:
             print("input file doesn't exist")
-            data = ""
     else:
-        data = str(input())
+        for line in sys.stdin.read().split('\n'):
+            data += str(line)
+            data += '\n'
+
     return data
 
 
@@ -31,7 +33,7 @@ def write_file(filename, obj):
         except NameError:
             print("Output file doesn't exist")
     else:
-        print(obj)
+        print(obj.strip('\n'))
 
 
 def encode_caesar(text, alphabet, shift):
@@ -42,7 +44,11 @@ def encode_caesar(text, alphabet, shift):
         if index == -1:
             encoded_text += text[i]
         else:
-            encoded_text += alphabet[(index + shift) % alphabet_size]
+            new_index = (index + shift) % alphabet_size
+            if text[i] == text[i].lower():
+                encoded_text += alphabet[new_index].lower()
+            else:
+                encoded_text += alphabet[new_index].upper()
     return encoded_text
 
 
@@ -112,7 +118,11 @@ def encode_vigenere(text, alphabet, key_word):
         if text_abc_index == -1:
             encoded_text += text[i]
         else:
-            encoded_text += vigenere_square[text_abc_index * alphabet_size + int(key_abc_index_arr[key_index])]
+            new_index = text_abc_index * alphabet_size + int(key_abc_index_arr[key_index])
+            if text[i] == text[i].lower():
+                encoded_text += vigenere_square[new_index].lower()
+            else:
+                encoded_text += vigenere_square[new_index].upper()
             key_index = (key_index + 1) % key_size
     return encoded_text
 
@@ -139,7 +149,10 @@ def decode_vigenere(text, alphabet, key_word):
                     text_index_in_abc = j
                     break
 
-            decoded_text += alphabet[text_index_in_abc]
+            if text[i] == text[i].lower():
+                decoded_text += alphabet[text_index_in_abc].lower()
+            else:
+                decoded_text += alphabet[text_index_in_abc].upper()
             key_index = (key_index + 1) % key_size
 
     return decoded_text
@@ -221,7 +234,7 @@ def hack_caesar(text, alphabet, key_file):
     for j in range(1, len(alphabet)):
         tmp_dict = shift_dict(text_freq_dict, j)
         tmp_diff = estimate_freq(norm_freq_dict, tmp_dict)
-        if diff >= tmp_diff:
+        if diff > tmp_diff:
             diff = tmp_diff
             needed_shift = j
 
