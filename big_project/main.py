@@ -13,8 +13,10 @@ def read_file(filename):
                 data = buffer.read()
         except IOError:
             print("An IOError has occurred!")
+            raise IOError
         except NameError:
             print("input file doesn't exist")
+            raise NameError
     else:
         for line in sys.stdin.read().split('\n'):
             data += str(line)
@@ -30,8 +32,10 @@ def write_file(filename, obj):
                 output_file.write(obj)
         except IOError:
             print("An IOError has occured")
+            raise IOError
         except NameError:
             print("Output file doesn't exist")
+            raise NameError
     else:
         print(obj.strip('\n'))
 
@@ -39,7 +43,8 @@ def write_file(filename, obj):
 def encode_caesar(text, alphabet, shift):
     encoded_text = ''
     alphabet_size = len(alphabet)
-    for i in range(len(text)):
+    text_size = len(text)
+    for i in range(text_size):
         index = alphabet.find(text[i])
         if index == -1:
             encoded_text += text[i]
@@ -56,47 +61,29 @@ def decode_caesar(text, alphabet, shift):
     return encode_caesar(text, alphabet, -shift)
 
 
-def shift_str(string, steps):
-    length = len(string)
-    shifted_str = ""
-    if steps == 0:
-        return string
-    else:
-        for i in range(length):
-            shifted_str += string[(i + steps) % length]
-    return shifted_str
-
-
 def shift_list(my_list, steps):
-    copy_list = my_list
-    if steps < 0:
-        steps = abs(steps)
-        for i in range(steps):
-            copy_list.append(copy_list.pop(0))
-    else:
-        for i in range(steps):
-            copy_list.insert(0, copy_list.pop())
-    return copy_list
+    new_steps = steps % len(my_list)
+    return my_list[-new_steps:] + my_list[:-new_steps]
+
+
+def shift_str(my_str, steps):
+    new_steps = steps % len(my_str)
+    return my_str[new_steps:] + my_str[:new_steps]
 
 
 def shift_dict(my_dict, steps):
-    i = 0
-    new_dict = my_dict.copy()
-    values = []
-    for value in my_dict.values():
-        values.append(value)
-
+    keys = list(my_dict.keys())
+    values = list(my_dict.values())
     shifted_values = shift_list(values, steps)
-
-    for key in new_dict.keys():
-        new_dict[key] = shifted_values[i]
-        i += 1
+    new_dict = {}
+    new_dict.update(zip(keys, shifted_values))
     return new_dict
 
 
 def get_vigenere_square(alphabet):
     square = ()
-    for i in range(len(alphabet)):
+    alphabet_size = len(alphabet)
+    for i in range(alphabet_size):
         tmp_str = shift_str(alphabet, i)
         square += tuple(tmp_str)
     return square
@@ -104,6 +91,7 @@ def get_vigenere_square(alphabet):
 
 def encode_vigenere(text, alphabet, key_word):
     alphabet_size = len(alphabet)
+    text_size = len(text)
     vigenere_square = get_vigenere_square(alphabet)
     encoded_text = ''
     key_index = 0
@@ -113,7 +101,7 @@ def encode_vigenere(text, alphabet, key_word):
     for i in range(key_size):
         key_abc_index_arr += tuple(str(alphabet.find(key_word[i])))
 
-    for i in range(len(text)):
+    for i in range(text_size):
         text_abc_index = alphabet.find(text[i])
         if text_abc_index == -1:
             encoded_text += text[i]
@@ -129,6 +117,7 @@ def encode_vigenere(text, alphabet, key_word):
 
 def decode_vigenere(text, alphabet, key_word):
     alphabet_size = len(alphabet)
+    text_size = len(text)
     vigenere_square = get_vigenere_square(alphabet)
     decoded_text = ''
     key_index = 0
@@ -138,7 +127,7 @@ def decode_vigenere(text, alphabet, key_word):
     for k in range(key_size):
         key_abc_index_arr += tuple(str(alphabet.find(key_word[k])))
 
-    for i in range(len(text)):
+    for i in range(text_size):
         text_abc_index = alphabet.find(text[i])
         if text_abc_index == -1:
             decoded_text += text[i]
@@ -200,10 +189,13 @@ def read_frequency(filename):
             data = pickle.load(f)
     except IOError:
         print("An IOError has occured")
+        raise IOError
     except NameError:
         print("Output file doesn't exist")
+        raise NameError
     except pickle.UnpicklingError:
         print("Problems with unpickling file")
+        raise pickle.UnpicklingError
     return data
 
 
@@ -213,16 +205,19 @@ def write_frequency(filename, obj):
             pickle.dump(obj, f)
     except IOError:
         print("An IOError has occured")
+        raise IOError
     except NameError:
         print("Frequency file doesn't exist")
+        raise NameError
     except pickle.PicklingError:
         print("Problems with pickling object")
+        raise pickle.PicklingError
 
 
 def estimate_freq(dict1, dict2):
     diff = 0
     for key in dict1.keys():
-        diff += pow((dict1.get(key) - dict2.get(key)), 2)
+        diff += ((dict1.get(key) - dict2.get(key)) ** 2)
     return math.sqrt(diff)
 
 
@@ -245,6 +240,7 @@ def count_freq(args):
     data = read_file(args.input_file.name)
     abc_str = string.ascii_letters
     freq = count_frequency(data, abc_str)
+    print(freq)
     write_frequency(args.output_file.name, freq)
 
 
@@ -255,53 +251,90 @@ def hack(args):
     write_file(args.output_file.name, new_data)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='code and encode texts')
-    subparsers = parser.add_subparsers()
-
+def encode_parse(subparsers):
     encode_parser = subparsers.add_parser('encode')
-    encode_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+    encode_parser.add_argument('--input_file',
+                               type=argparse.FileType('rt'),
+                               default=sys.stdin,
                                help='The file with the text which we need to encode')
-    encode_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+    encode_parser.add_argument('--output_file',
+                               type=argparse.FileType('wt'),
                                default=sys.stdout,
                                help='The file where we put encoded text')
-    encode_parser.add_argument('--cipher', type=str, choices=['caesar', 'vigenere'],
+    encode_parser.add_argument('--cipher',
+                               type=str,
+                               choices=['caesar', 'vigenere'],
                                help='Choose one of the cipher: caesar or vigenere')
-    encode_parser.add_argument('--key', type=str, default='0',
+    encode_parser.add_argument('--key',
+                               type=str,
+                               default='0',
                                help='Write the number if you use Caesar\'s code, or the word otherwise')
     encode_parser.set_defaults(func=encode)
+    return encode_parser
 
+
+def decode_parse(subparsers):
     decode_parser = subparsers.add_parser('decode', help='')
-    decode_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+    decode_parser.add_argument('--input_file',
+                               type=argparse.FileType('rt'),
+                               default=sys.stdin,
                                help='The file with the text which we need to decode')
-    decode_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+    decode_parser.add_argument('--output_file',
+                               type=argparse.FileType('wt'),
                                default=sys.stdout,
                                help='The file where we put decoded text')
-    decode_parser.add_argument('--cipher', type=str, choices=['caesar', 'vigenere'],
+    decode_parser.add_argument('--cipher',
+                               type=str,
+                               choices=['caesar', 'vigenere'],
                                help='Choose one of the cipher: caesar or vigenere')
     decode_parser.add_argument('--key', type=str, default='0',
                                help='Write the number if you use Caesar\'s code, or the word otherwise')
     decode_parser.set_defaults(func=decode)
 
+
+def freq_parse(subparsers):
     freq_parser = subparsers.add_parser('frequence', help='')
-    freq_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+    freq_parser.add_argument('--input_file',
+                             type=argparse.FileType('rt'),
+                             default=sys.stdin,
                              help='The file with text in which we must calculate the frequency of letters')
-    freq_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+    freq_parser.add_argument('--output_file',
+                             type=argparse.FileType('wt'),
                              default=sys.stdout,
                              help='The file where we put binary file with the frequency of letters')
     freq_parser.set_defaults(func=count_freq)
 
+
+def hack_parse(subparsers):
     hack_parser = subparsers.add_parser('hack', help='')
-    hack_parser.add_argument('--key_file', type=argparse.FileType('rt'),
+    hack_parser.add_argument('--key_file',
+                             type=argparse.FileType('rt'),
                              help='Character frequency file for hacking Caesar’s cipher')
-    hack_parser.add_argument('--input_file', type=argparse.FileType('rt'), default=sys.stdin,
+    hack_parser.add_argument('--input_file',
+                             type=argparse.FileType('rt'),
+                             default=sys.stdin,
                              help='The file with text in which we need to hack')
-    hack_parser.add_argument('--output_file', type=argparse.FileType('wt'),
+    hack_parser.add_argument('--output_file',
+                             type=argparse.FileType('wt'),
                              default=sys.stdout,
                              help='The file where we put decoded text')
     hack_parser.set_defaults(func=hack)
-    return parser.parse_args()
 
 
-args = parse_args()
-args.func(args)
+def get_parser():
+    parser = argparse.ArgumentParser(description='code and encode texts')
+    subparsers = parser.add_subparsers()
+
+    encode_parse(subparsers)
+    decode_parse(subparsers)
+    freq_parse(subparsers)
+    hack_parse(subparsers)
+
+    return parser
+
+
+my_parser = get_parser()
+
+if __name__ == "__main__":
+    args = my_parser.parse_args()
+    args.func(args)
