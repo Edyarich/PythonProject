@@ -27,4 +27,3 @@ How to run project? There are four modes in project
 
 — If you do not specify the path to the input/output file then the input/output will be through the console <br>
 — <path_1> is a path to the binary file in which stores a middle letter frequencies (In the project it is called "symbols_frequency.pickle")
-
