@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import string
 import pickle
 import math
@@ -5,11 +6,26 @@ import argparse
 import sys
 
 
+my_alphabet = (string.ascii_letters,
+               "абвгдежзийклмнопрстуфхцчшщъыьэюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
+               string.punctuation)
+
+
+def get_sign_type(sign):
+    if ('a' <= sign <= 'z') or ('A' <= sign <= 'Z'):
+        return 0
+    elif ('а' <= sign <= 'я') or ('А' <= sign <= 'Я'):
+        return 1
+    elif (string.punctuation.find(sign) != -1):
+        return 2
+    return -1
+
+
 def read_file(filename):
     data = ""
     if filename != '<stdin>':
         try:
-            with open(filename, 'rt') as buffer:
+            with open(filename, 'rt', encoding='utf-8') as buffer:
                 data = buffer.read()
         except IOError:
             print("An IOError has occurred!")
@@ -28,7 +44,7 @@ def read_file(filename):
 def write_file(filename, obj):
     if filename != '<stdout>':
         try:
-            with open(filename, 'wt') as output_file:
+            with open(filename, 'wt', encoding='utf-8') as output_file:
                 output_file.write(obj)
         except IOError:
             print("An IOError has occured")
@@ -40,20 +56,21 @@ def write_file(filename, obj):
         print(obj.strip('\n'))
 
 
-def encode_caesar(text, alphabet, shift):
+def encode_caesar(text, alphabet_arr, shift):
     encoded_text = ''
-    alphabet_size = len(alphabet)
     text_size = len(text)
     for i in range(text_size):
-        index = alphabet.find(text[i])
-        if index == -1:
+        char_type = get_sign_type(text[i])
+        if char_type == -1:
             encoded_text += text[i]
         else:
+            alphabet_size = len(alphabet_arr[char_type])
+            index = alphabet_arr[char_type].find(text[i])
             new_index = (index + shift) % alphabet_size
             if text[i] == text[i].lower():
-                encoded_text += alphabet[new_index].lower()
+                encoded_text += alphabet_arr[char_type][new_index].lower()
             else:
-                encoded_text += alphabet[new_index].upper()
+                encoded_text += alphabet_arr[char_type][new_index].upper()
     return encoded_text
 
 
@@ -80,68 +97,79 @@ def shift_dict(my_dict, steps):
     return new_dict
 
 
-def get_vigenere_square(alphabet):
+def get_vigenere_square(alphabet_arr):
     square = ()
-    alphabet_size = len(alphabet)
-    for i in range(alphabet_size):
-        tmp_str = shift_str(alphabet, i)
-        square += tuple(tmp_str)
+    alphabet_size = len(alphabet_arr)
+    for j in range(alphabet_size):
+        small_square = ()
+        small_alphabet_size = len(alphabet_arr[j])
+        for i in range(small_alphabet_size):
+            tmp_str = shift_str(alphabet_arr[j], i)
+            small_square += tuple(tmp_str)
+
+        square += small_square,
     return square
 
 
-def encode_vigenere(text, alphabet, key_word):
-    alphabet_size = len(alphabet)
+def encode_vigenere(text, alphabet_arr, key_word):
     text_size = len(text)
-    vigenere_square = get_vigenere_square(alphabet)
+    vigenere_square = get_vigenere_square(alphabet_arr)
     encoded_text = ''
     key_index = 0
     key_size = len(key_word)
     key_abc_index_arr = ()
 
     for i in range(key_size):
-        key_abc_index_arr += tuple(str(alphabet.find(key_word[i])))
+        char_type = get_sign_type(key_word[i])
+        key_abc_index_arr += char_type if (char_type == -1) else \
+            tuple(str(alphabet_arr[char_type].find(key_word[i])))
 
     for i in range(text_size):
-        text_abc_index = alphabet.find(text[i])
+        char_type = get_sign_type(text[i])
+        text_abc_index = char_type if (char_type == -1) else alphabet_arr[char_type].find(text[i])
         if text_abc_index == -1:
             encoded_text += text[i]
         else:
+            alphabet_size = len(alphabet_arr[char_type])
             new_index = text_abc_index * alphabet_size + int(key_abc_index_arr[key_index])
             if text[i] == text[i].lower():
-                encoded_text += vigenere_square[new_index].lower()
+                encoded_text += vigenere_square[char_type][new_index].lower()
             else:
-                encoded_text += vigenere_square[new_index].upper()
+                encoded_text += vigenere_square[char_type][new_index].upper()
             key_index = (key_index + 1) % key_size
     return encoded_text
 
 
-def decode_vigenere(text, alphabet, key_word):
-    alphabet_size = len(alphabet)
+def decode_vigenere(text, alphabet_arr, key_word):
     text_size = len(text)
-    vigenere_square = get_vigenere_square(alphabet)
+    vigenere_square = get_vigenere_square(alphabet_arr)
     decoded_text = ''
     key_index = 0
     key_size = len(key_word)
     key_abc_index_arr = ()
 
     for k in range(key_size):
-        key_abc_index_arr += tuple(str(alphabet.find(key_word[k])))
+        char_type = get_sign_type(key_word[k])
+        key_abc_index_arr += tuple(str(char_type)) if (char_type == -1) else \
+            tuple(str(alphabet_arr[char_type].find(key_word[k])))
 
     for i in range(text_size):
-        text_abc_index = alphabet.find(text[i])
+        char_type = get_sign_type(text[i])
+        text_abc_index = char_type if (char_type == -1) else alphabet_arr[char_type].find(text[i])
         if text_abc_index == -1:
             decoded_text += text[i]
         else:
+            alphabet_size = len(alphabet_arr[char_type])
             text_index_in_abc = 0
             for j in range(alphabet_size):
-                if vigenere_square[alphabet_size * int(key_abc_index_arr[key_index]) + j] == text[i]:
+                if vigenere_square[char_type][alphabet_size * int(key_abc_index_arr[key_index]) + j] == text[i]:
                     text_index_in_abc = j
                     break
 
             if text[i] == text[i].lower():
-                decoded_text += alphabet[text_index_in_abc].lower()
+                decoded_text += alphabet_arr[char_type][text_index_in_abc].lower()
             else:
-                decoded_text += alphabet[text_index_in_abc].upper()
+                decoded_text += alphabet_arr[char_type][text_index_in_abc].upper()
             key_index = (key_index + 1) % key_size
 
     return decoded_text
@@ -149,37 +177,40 @@ def decode_vigenere(text, alphabet, key_word):
 
 def encode(args):
     data = read_file(args.input_file.name)
-    abc_str = string.ascii_letters
+    abc_arr = my_alphabet
     new_data = ''
     if args.cipher == 'vigenere':
-        new_data = encode_vigenere(data, abc_str, args.key)
+        new_data = encode_vigenere(data, abc_arr, args.key)
     elif args.cipher == 'caesar':
-        new_data = encode_caesar(data, abc_str, int(args.key))
+        new_data = encode_caesar(data, abc_arr, int(args.key))
     write_file(args.output_file.name, new_data)
 
 
 def decode(args):
     data = read_file(args.input_file.name)
-    abc_str = string.ascii_letters
+    abc_arr = my_alphabet
     new_data = ''
     if args.cipher == 'vigenere':
-        new_data = decode_vigenere(data, abc_str, args.key)
+        new_data = decode_vigenere(data, abc_arr, args.key)
     elif args.cipher == 'caesar':
-        new_data = decode_caesar(data, abc_str, int(args.key))
+        new_data = decode_caesar(data, abc_arr, int(args.key))
     write_file(args.output_file.name, new_data)
 
 
-def count_frequency(text, alphabet):
-    freq_dict = dict.fromkeys(alphabet.lower(), 0)
-    text_length = 0
-    for i in range(len(text)):
-        if alphabet.find(text[i].lower()) != -1:
+def count_frequency(text, alphabet_arr):
+    keys = [*my_alphabet]
+    freq_dict = dict.fromkeys(str(keys), 0)
+    new_text_len = 0
+    text_size = len(text)
+    for i in range(text_size):
+        char_type = get_sign_type(text[i])
+        if char_type != -1 and alphabet_arr[char_type].find(text[i].lower()) != -1:
             freq_dict[text[i].lower()] += 1
-            text_length += 1
+            new_text_len += 1
 
-    if text_length != 0:
+    if new_text_len != 0:
         for sign in freq_dict.keys():
-            freq_dict[sign] *= (100 / text_length)
+            freq_dict[sign] *= (100 / new_text_len)
     return freq_dict
 
 
@@ -187,6 +218,7 @@ def read_frequency(filename):
     try:
         with open(filename, 'rb') as f:
             data = pickle.load(f)
+            # print(data)
     except IOError:
         print("An IOError has occured")
         raise IOError
@@ -221,24 +253,25 @@ def estimate_freq(dict1, dict2):
     return math.sqrt(diff)
 
 
-def hack_caesar(text, alphabet, key_file):
+def hack_caesar(text, alphabet_arr, key_file):
     norm_freq_dict = read_frequency(key_file)
-    text_freq_dict = count_frequency(text, alphabet)
+    text_freq_dict = count_frequency(text, alphabet_arr)
+    total_alphabet_len = len(alphabet_arr[0]) * len(alphabet_arr[1]) * len(alphabet_arr[2])
     needed_shift = 0
     diff = estimate_freq(norm_freq_dict, text_freq_dict)
-    for j in range(1, len(alphabet)):
+    for j in range(1, total_alphabet_len):
         tmp_dict = shift_dict(text_freq_dict, j)
         tmp_diff = estimate_freq(norm_freq_dict, tmp_dict)
         if diff > tmp_diff:
             diff = tmp_diff
             needed_shift = j
 
-    return encode_caesar(text, alphabet, needed_shift)
+    return encode_caesar(text, alphabet_arr, needed_shift)
 
 
 def count_freq(args):
     data = read_file(args.input_file.name)
-    abc_str = string.ascii_letters
+    abc_str = my_alphabet
     freq = count_frequency(data, abc_str)
     print(freq)
     write_frequency(args.output_file.name, freq)
@@ -246,7 +279,7 @@ def count_freq(args):
 
 def hack(args):
     data = read_file(args.input_file.name)
-    abc_str = string.ascii_letters
+    abc_str = my_alphabet
     new_data = hack_caesar(data, abc_str, args.key_file.name)
     write_file(args.output_file.name, new_data)
 
@@ -333,8 +366,7 @@ def get_parser():
     return parser
 
 
-my_parser = get_parser()
-
 if __name__ == "__main__":
+    my_parser = get_parser()
     args = my_parser.parse_args()
     args.func(args)
