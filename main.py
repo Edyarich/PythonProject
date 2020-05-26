@@ -258,7 +258,7 @@ def hack_caesar(text, alphabet_arr, key_file):
     norm_freq_dict = read_frequency(key_file)
     text_freq_dict = count_frequency(text, alphabet_arr)
     total_alphabet_len = len(alphabet_arr[0]) * len(alphabet_arr[1]) * \
-                        len(alphabet_arr[2])
+                         len(alphabet_arr[2])
     needed_shift = 0
     diff = estimate_freq(norm_freq_dict, text_freq_dict)
     for j in range(1, total_alphabet_len):
