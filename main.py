@@ -152,7 +152,7 @@ def decode_vigenere(text, alphabet_arr, key_word):
     for k in range(key_size):
         char_type = get_sign_type(key_word[k])
         key_abc_index_arr += tuple(str(char_type)) if (char_type == -1) else \
-         tuple(str(alphabet_arr[char_type].find(key_word[k])))
+            tuple(str(alphabet_arr[char_type].find(key_word[k])))
 
     for i in range(text_size):
         char_type = get_sign_type(text[i])
@@ -257,7 +257,8 @@ def estimate_freq(dict1, dict2):
 def hack_caesar(text, alphabet_arr, key_file):
     norm_freq_dict = read_frequency(key_file)
     text_freq_dict = count_frequency(text, alphabet_arr)
-    total_alphabet_len = sum([len(alphabet_arr[i]) for i in range(len(alphabet_arr))])
+    total_alphabet_len = len(alphabet_arr[0]) * len(alphabet_arr[1]) * \
+                        len(alphabet_arr[2])
     needed_shift = 0
     diff = estimate_freq(norm_freq_dict, text_freq_dict)
     for j in range(1, total_alphabet_len):
@@ -371,4 +372,3 @@ if __name__ == "__main__":
     my_parser = get_parser()
     args = my_parser.parse_args()
     args.func(args)
-
