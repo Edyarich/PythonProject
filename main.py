@@ -26,7 +26,7 @@ def read_file(filename):
     data = ""
     if filename != '<stdin>':
         try:
-            with open(filename, 'rt') as buffer:
+            with open(filename, 'rt', encoding='utf-8') as buffer:
                 data = buffer.read()
         except IOError:
             print("An IOError has occurred!")
@@ -45,7 +45,7 @@ def read_file(filename):
 def write_file(filename, obj):
     if filename != '<stdout>':
         try:
-            with open(filename, 'wt') as output_file:
+            with open(filename, 'wt', encoding='utf-8') as output_file:
                 output_file.write(obj)
         except IOError:
             print("An IOError has occured")
@@ -257,8 +257,7 @@ def estimate_freq(dict1, dict2):
 def hack_caesar(text, alphabet_arr, key_file):
     norm_freq_dict = read_frequency(key_file)
     text_freq_dict = count_frequency(text, alphabet_arr)
-    total_alphabet_len = len(alphabet_arr[0]) * len(alphabet_arr[1]) * \
-                         len(alphabet_arr[2])
+    total_alphabet_len = len(alphabet_arr[0]) * len(alphabet_arr[1]) * len(alphabet_arr[2])
     needed_shift = 0
     diff = estimate_freq(norm_freq_dict, text_freq_dict)
     for j in range(1, total_alphabet_len):
