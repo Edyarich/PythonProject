@@ -5,7 +5,6 @@ import math
 import argparse
 import sys
 
-from normal_frequency import mid_freq_dict
 
 my_alphabet = (string.ascii_letters,
                "абвгдежзийклмнопрстуфхцчшщъыьэюяАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
